@@ -42,9 +42,6 @@ class Displace {
 		setup.call(this);
 	}
 
-	reinit(){
-		setup.call(this);
-	}
 	destroy(){
 		const events = this.events;
 
@@ -77,29 +74,38 @@ function setup(){
 
 	// generate min / max ranges
 	if (opts.constrain){
-		const relTo = opts.relativeTo || el.parentNode;
+		function setClamp(){
+			const relTo = opts.relativeTo || el.parentNode;
 		
-		let traverse = el;
-		let minX = 0;
-		let minY = 0;
-		while (traverse !== relTo){
-			traverse = traverse.parentNode;
-			if (isRelative(traverse)){
-				minX -= traverse.offsetLeft;
-				minY -= traverse.offsetTop;
+			let traverse = el;
+			let minX = 0;
+			let minY = 0;
+			while (traverse !== relTo){
+				traverse = traverse.parentNode;
+				if (isRelative(traverse)){
+					minX -= traverse.offsetLeft;
+					minY -= traverse.offsetTop;
+				}
+				if (traverse === relTo){
+					minX += traverse.offsetLeft;
+					minY += traverse.offsetTop;
+				}
 			}
-			if (traverse === relTo){
-				minX += traverse.offsetLeft;
-				minY += traverse.offsetTop;
-			}
+
+			const maxX = minX + relTo.offsetWidth - el.offsetWidth;
+			const maxY = minY + relTo.offsetHeight - el.offsetHeight;
+
+			data.xClamp = generateClamp(minX, maxX);
+			data.yClamp = generateClamp(minY, maxY);
 		}
 
-		const maxX = minX + relTo.offsetWidth - el.offsetWidth;
-		const maxY = minY + relTo.offsetHeight - el.offsetHeight;
+		setClamp();
 
-		data.xClamp = generateClamp(minX, maxX);
-		data.yClamp = generateClamp(minY, maxY);
+		window.addEventListener('resize', function(){
+			setClamp();
+		}, false);
 	}
+	
 
 	this.opts = opts;
 	this.data = data;
@@ -116,6 +122,7 @@ function setup(){
 	// add init events to handle
 	this.handle.addEventListener('mousedown', this.events.mousedown, false);
 	this.handle.addEventListener('touchstart', this.events.touchstart, false);
+
 }
 
 // export factory fn
